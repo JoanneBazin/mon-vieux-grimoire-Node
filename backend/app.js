@@ -1,5 +1,18 @@
 const express = require("express");
+const mongoose = require("mongoose");
+require("dotenv").config();
+
 const app = express();
+
+const mongoURI = process.env.MONGO_URI;
+
+mongoose
+  .connect(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("Connected to MongoDB !"))
+  .catch(() => console.log("Connection to MongoDB failed !"));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
