@@ -1,8 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
 require("dotenv").config();
+const booksRoutes = require("./routes/books");
+const authRoutes = require("./routes/auth");
 
 const app = express();
+app.use(express.json());
 
 const mongoURI = process.env.MONGO_URI;
 
@@ -27,10 +30,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res) => {
-  res.status(200).json({
-    message: "Init backend",
-  });
-});
+app.use("/api/books", booksRoutes);
+app.use("/api/auth", authRoutes);
 
 module.exports = app;
