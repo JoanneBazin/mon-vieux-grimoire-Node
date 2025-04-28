@@ -1,0 +1,19 @@
+# Node modules backend
+/backend/node_modules/
+
+# Node modules frontend
+/frontend/node_modules/
+
+# Env files
+/backend/.env
+/frontend/.env
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# VS Code settings
+.vscode/
