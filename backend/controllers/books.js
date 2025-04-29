@@ -1,11 +1,21 @@
 const Book = require("../models/Book");
 
-exports.createBook = (req, res, next) => {
+exports.addBook = (req, res, next) => {
+  const bookObject = JSON.parse(req.body.book);
+  delete bookObject.userId;
+
   const newBook = new Book({
-    ...req.body,
-  })
-    .then((books) => {
-      res.status(200).json(books);
+    ...bookObject,
+    userId: req.auth.userId,
+    imageUrl: `${req.protocol}://${req.get("host")}/images/${
+      req.file.filename
+    }`,
+  });
+
+  newBook
+    .save()
+    .then(() => {
+      res.status(201).json({ message: "Livre ajouté avec succès !" });
     })
     .catch((error) => {
       res.status(400).json({ error });
