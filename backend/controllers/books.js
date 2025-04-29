@@ -23,6 +23,33 @@ exports.addBook = (req, res, next) => {
     });
 };
 
+exports.rateBook = (req, res, next) => {
+  const userId = req.auth.userId;
+  const grade = req.body.rating;
+
+  Book.findOne({ _id: req.params.id })
+    .then((book) => {
+      if (book.ratings.find((rating) => rating.userId === userId)) {
+        return res
+          .status(400)
+          .json({ message: "Vous avez déjà noté ce livre." });
+      }
+      book.ratings.push({ userId, grade });
+
+      const totalRatings = book.ratings.reduce(
+        (acc, curr) => acc + curr.grade,
+        0
+      );
+      book.averageRating = totalRatings / book.ratings.length;
+
+      book
+        .save()
+        .then((book) => res.status(200).json(book))
+        .catch((error) => res.status(400).json({ error }));
+    })
+    .catch((error) => res.status(400).json({ error }));
+};
+
 exports.updateBook = (req, res, next) => {
   const bookObject = req.file
     ? {
