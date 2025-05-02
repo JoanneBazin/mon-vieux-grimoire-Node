@@ -1,3 +1,4 @@
+const resizeImage = require("../middleware/sharp");
 const Book = require("../models/Book");
 const fs = require("fs");
 
@@ -5,16 +6,16 @@ exports.addBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject.userId;
 
-  const newBook = new Book({
-    ...bookObject,
-    userId: req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get("host")}/images/${
-      req.file.filename
-    }`,
-  });
+  resizeImage(req.file)
+    .then((filename) => {
+      const newBook = new Book({
+        ...bookObject,
+        userId: req.auth.userId,
+        imageUrl: `${req.protocol}://${req.get("host")}/images/${filename}`,
+      });
+      return newBook.save();
+    })
 
-  newBook
-    .save()
     .then(() => {
       res.status(201).json({ message: "Livre ajouté avec succès !" });
     })
@@ -51,29 +52,45 @@ exports.rateBook = (req, res, next) => {
 };
 
 exports.updateBook = (req, res, next) => {
-  const bookObject = req.file
-    ? {
-        ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get("host")}/images/${
-          req.file.filename
-        }`,
-      }
-    : { ...req.body };
+  let foundBook;
 
-  delete bookObject.userId;
   Book.findOne({ _id: req.params.id })
     .then((book) => {
+      if (!book) {
+        return res.status(404).json({ message: "Livre non trouvé." });
+      }
+
       if (book.userId !== req.auth.userId) {
-        res.status(401).json({ message: "Modification non autorisée." });
+        return res.status(401).json({ message: "Modification non autorisée." });
+      }
+
+      foundBook = book;
+
+      if (req.file) {
+        return resizeImage(req.file).then((newFile) => {
+          const oldFile = foundBook.imageUrl.split("/images/")[1];
+          fs.unlink(`images/${oldFile}`, (err) => {
+            if (err)
+              console.log("Echec de la suppression de l'ancienne image: ", err);
+          });
+
+          return {
+            ...JSON.parse(req.body.book),
+            imageUrl: `${req.protocol}://${req.get("host")}/images/${newFile}`,
+          };
+        });
       } else {
-        Book.updateOne(
-          { _id: req.params.id },
-          { ...bookObject, _id: req.params.id }
-        )
-          .then(() => res.status(200).json({ message: "Livre modifié !" }))
-          .catch((error) => res.status(401).json({ error }));
+        return { ...req.body };
       }
     })
+    .then((bookObject) => {
+      delete bookObject.userId;
+      return Book.updateOne(
+        { _id: req.params.id },
+        { ...bookObject, _id: req.params.id }
+      );
+    })
+    .then(() => res.status(200).json({ message: "Livre modifié !" }))
     .catch((error) => res.status(400).json({ error }));
 };
 
