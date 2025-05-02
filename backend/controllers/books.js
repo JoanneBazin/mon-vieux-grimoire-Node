@@ -20,7 +20,11 @@ exports.addBook = (req, res, next) => {
       res.status(201).json({ message: "Livre ajouté avec succès !" });
     })
     .catch((error) => {
-      res.status(400).json({ error });
+      if (error.name === "ValidationError") {
+        res.status(400).json({ error });
+      } else {
+        res.status(500).json({ error });
+      }
     });
 };
 
@@ -30,10 +34,12 @@ exports.rateBook = (req, res, next) => {
 
   Book.findOne({ _id: req.params.id })
     .then((book) => {
+      if (!book) {
+        return res.status(404).json({ error: "Livre non trouvé." });
+      }
+
       if (book.ratings.find((rating) => rating.userId === userId)) {
-        return res
-          .status(400)
-          .json({ message: "Vous avez déjà noté ce livre." });
+        return res.status(403).json({ error: "Vous avez déjà noté ce livre." });
       }
       book.ratings.push({ userId, grade });
 
@@ -48,7 +54,7 @@ exports.rateBook = (req, res, next) => {
         .then((book) => res.status(200).json(book))
         .catch((error) => res.status(400).json({ error }));
     })
-    .catch((error) => res.status(400).json({ error }));
+    .catch((error) => res.status(500).json({ error }));
 };
 
 exports.updateBook = (req, res, next) => {
@@ -57,11 +63,11 @@ exports.updateBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ message: "Livre non trouvé." });
+        return res.status(404).json({ error: "Livre non trouvé." });
       }
 
       if (book.userId !== req.auth.userId) {
-        return res.status(401).json({ message: "Modification non autorisée." });
+        return res.status(403).json({ error: "Unauthorized request" });
       }
 
       foundBook = book;
@@ -91,22 +97,26 @@ exports.updateBook = (req, res, next) => {
       );
     })
     .then(() => res.status(200).json({ message: "Livre modifié !" }))
-    .catch((error) => res.status(400).json({ error }));
+    .catch((error) => res.status(500).json({ error }));
 };
 
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
-      if (book.userId !== req.auth.userId) {
-        res.status(401).json({ message: "Suppression non autorisée." });
-      } else {
-        const filename = book.imageUrl.split("/images/")[1];
-        fs.unlink(`images/${filename}`, () => {
-          Book.deleteOne({ _id: req.params.id })
-            .then(() => res.status(200).json({ message: "Livre supprimé !" }))
-            .catch((error) => res.status(401).json({ error }));
-        });
+      if (!book) {
+        return res.status(404).json({ error: "Livre non trouvé." });
       }
+
+      if (book.userId !== req.auth.userId) {
+        return res.status(403).json({ error: "Unauthorized request" });
+      }
+
+      const filename = book.imageUrl.split("/images/")[1];
+      fs.unlink(`images/${filename}`, () => {
+        Book.deleteOne({ _id: req.params.id })
+          .then(() => res.status(200).json({ message: "Livre supprimé !" }))
+          .catch((error) => res.status(401).json({ error }));
+      });
     })
     .catch((error) => res.status(500).json({ error }));
 };
@@ -115,12 +125,11 @@ exports.getOneBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ error: new Error("Livre non trouvé !") });
-      } else {
-        res.status(200).json(book);
+        return res.status(404).json({ error: "Livre non trouvé." });
       }
+      res.status(200).json(book);
     })
-    .catch((error) => res.status(400).json({ error }));
+    .catch((error) => res.status(500).json({ error }));
 };
 
 exports.getBestRatingBooks = (req, res, next) => {
@@ -131,7 +140,7 @@ exports.getBestRatingBooks = (req, res, next) => {
       res.status(200).json(books);
     })
     .catch((error) => {
-      res.status(400).json({ error });
+      res.status(500).json({ error });
     });
 };
 
@@ -141,6 +150,6 @@ exports.getAllBooks = (req, res, next) => {
       res.status(200).json(books);
     })
     .catch((error) => {
-      res.status(400).json({ error });
+      res.status(500).json({ error });
     });
 };

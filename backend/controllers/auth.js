@@ -12,7 +12,13 @@ exports.signup = (req, res, next) => {
     user
       .save()
       .then(() => res.status(201).json({ message: "Utilisateur créé !" }))
-      .catch((error) => res.status(400).json({ error }));
+      .catch((error) => {
+        if (error.name === "ValidationError" || error.code === 11000) {
+          res.status(400).json({ error });
+        } else {
+          res.status(500).json({ error });
+        }
+      });
   });
 };
 
@@ -21,27 +27,23 @@ exports.login = (req, res, next) => {
     .then((user) => {
       if (!user) {
         return res.status(401).json({ error: "Identifiants incorrects." });
-      } else {
-        bcrypt
-          .compare(req.body.password, user.password)
-          .then((valid) => {
-            if (!valid) {
-              return res
-                .status(401)
-                .json({ error: "Identifiants incorrects." });
-            } else {
-              res.status(200).json({
-                userId: user._id,
-                token: jwt.sign(
-                  { userId: user._id },
-                  process.env.TOKEN_SECRET,
-                  { expiresIn: "24h" }
-                ),
-              });
-            }
-          })
-          .catch((error) => res.status(500).json({ error }));
       }
+
+      bcrypt
+        .compare(req.body.password, user.password)
+        .then((valid) => {
+          if (!valid) {
+            return res.status(401).json({ error: "Identifiants incorrects." });
+          }
+
+          res.status(200).json({
+            userId: user._id,
+            token: jwt.sign({ userId: user._id }, process.env.TOKEN_SECRET, {
+              expiresIn: "24h",
+            }),
+          });
+        })
+        .catch((error) => res.status(500).json({ error }));
     })
     .catch((error) => res.status(500).json({ error }));
 };
