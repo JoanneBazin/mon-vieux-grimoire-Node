@@ -1,4 +1,4 @@
-const resizeImage = require("../middleware/sharp");
+const resizeImage = require("../utils/sharp");
 const Book = require("../models/Book");
 const fs = require("fs");
 
@@ -47,7 +47,8 @@ exports.rateBook = (req, res, next) => {
         (acc, curr) => acc + curr.grade,
         0
       );
-      book.averageRating = totalRatings / book.ratings.length;
+      const average = totalRatings / book.ratings.length;
+      book.averageRating = Number(average.toFixed(1));
 
       book
         .save()
