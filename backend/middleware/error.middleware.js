@@ -4,6 +4,8 @@ module.exports = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
 
   if (process.env.NODE_ENV === "development") {
+    console.log(err);
+
     return res.status(statusCode).json({
       error: {
         name: err.name,

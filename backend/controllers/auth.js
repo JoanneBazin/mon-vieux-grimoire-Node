@@ -2,6 +2,7 @@ const User = require("../models/User");
 const validator = require("validator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const HttpError = require("../utils/HttpError");
 require("dotenv").config();
 
 exports.signup = (req, res, next) => {
