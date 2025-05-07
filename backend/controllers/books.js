@@ -95,11 +95,18 @@ exports.updateBook = (req, res, next) => {
       delete bookObject.userId;
       return Book.updateOne(
         { _id: req.params.id },
-        { ...bookObject, _id: req.params.id }
+        { ...bookObject, _id: req.params.id },
+        { runValidators: true }
       );
     })
     .then(() => res.status(200).json({ message: "Livre modifié !" }))
-    .catch((error) => next(error));
+    .catch((error) => {
+      if (error.name === "ValidationError") {
+        return next(new HttpError(400, error.message, error.name));
+      } else {
+        return next(error);
+      }
+    });
 };
 
 exports.deleteBook = (req, res, next) => {
