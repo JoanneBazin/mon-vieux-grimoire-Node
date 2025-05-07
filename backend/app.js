@@ -4,6 +4,7 @@ require("dotenv").config();
 const path = require("path");
 const booksRoutes = require("./routes/books");
 const authRoutes = require("./routes/auth");
+const errorMiddleware = require("./middleware/error.middleware");
 
 const app = express();
 app.use(express.json());
@@ -35,5 +36,7 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use("/api/books", booksRoutes);
 app.use("/api/auth", authRoutes);
+
+app.use(errorMiddleware);
 
 module.exports = app;

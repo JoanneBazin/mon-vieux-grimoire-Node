@@ -1,6 +1,7 @@
 const resizeImage = require("../utils/sharp");
 const Book = require("../models/Book");
 const fs = require("fs");
+const HttpError = require("../utils/HttpError");
 
 exports.addBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
@@ -21,9 +22,9 @@ exports.addBook = (req, res, next) => {
     })
     .catch((error) => {
       if (error.name === "ValidationError") {
-        res.status(400).json({ error });
+        return next(new HttpError(400, error.message, error.name));
       } else {
-        res.status(500).json({ error });
+        return next(error);
       }
     });
 };
@@ -35,11 +36,11 @@ exports.rateBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ error: "Livre non trouvé." });
+        return next(new HttpError(404, "Livre non trouvé."));
       }
 
       if (book.ratings.find((rating) => rating.userId === userId)) {
-        return res.status(403).json({ error: "Vous avez déjà noté ce livre." });
+        return next(new HttpError(403, "Vous avez déjà noté ce livre."));
       }
       book.ratings.push({ userId, grade });
 
@@ -53,9 +54,9 @@ exports.rateBook = (req, res, next) => {
       book
         .save()
         .then((book) => res.status(200).json(book))
-        .catch((error) => res.status(400).json({ error }));
+        .catch((error) => next(new HttpError(400, error.message, error.name)));
     })
-    .catch((error) => res.status(500).json({ error }));
+    .catch((error) => next(error));
 };
 
 exports.updateBook = (req, res, next) => {
@@ -64,11 +65,11 @@ exports.updateBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ error: "Livre non trouvé." });
+        return next(new HttpError(404, "Livre non trouvé."));
       }
 
       if (book.userId !== req.auth.userId) {
-        return res.status(403).json({ error: "Unauthorized request" });
+        return next(new HttpError(403, "Unauthorized request"));
       }
 
       foundBook = book;
@@ -98,39 +99,41 @@ exports.updateBook = (req, res, next) => {
       );
     })
     .then(() => res.status(200).json({ message: "Livre modifié !" }))
-    .catch((error) => res.status(500).json({ error }));
+    .catch((error) => next(error));
 };
 
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ error: "Livre non trouvé." });
+        return next(new HttpError(404, "Livre non trouvé."));
       }
 
       if (book.userId !== req.auth.userId) {
-        return res.status(403).json({ error: "Unauthorized request" });
+        return next(new HttpError(403, "Unauthorized request"));
       }
 
       const filename = book.imageUrl.split("/images/")[1];
       fs.unlink(`images/${filename}`, () => {
         Book.deleteOne({ _id: req.params.id })
           .then(() => res.status(200).json({ message: "Livre supprimé !" }))
-          .catch((error) => res.status(401).json({ error }));
+          .catch((error) =>
+            next(new HttpError(401, error.message, error.name))
+          );
       });
     })
-    .catch((error) => res.status(500).json({ error }));
+    .catch((error) => next(error));
 };
 
 exports.getOneBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ error: "Livre non trouvé." });
+        return next(new HttpError(404, "Livre non trouvé."));
       }
       res.status(200).json(book);
     })
-    .catch((error) => res.status(500).json({ error }));
+    .catch((error) => next(error));
 };
 
 exports.getBestRatingBooks = (req, res, next) => {
@@ -140,9 +143,7 @@ exports.getBestRatingBooks = (req, res, next) => {
     .then((books) => {
       res.status(200).json(books);
     })
-    .catch((error) => {
-      res.status(500).json({ error });
-    });
+    .catch((error) => next(error));
 };
 
 exports.getAllBooks = (req, res, next) => {
@@ -150,7 +151,5 @@ exports.getAllBooks = (req, res, next) => {
     .then((books) => {
       res.status(200).json(books);
     })
-    .catch((error) => {
-      res.status(500).json({ error });
-    });
+    .catch((error) => next(error));
 };

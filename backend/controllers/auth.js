@@ -6,7 +6,7 @@ require("dotenv").config();
 
 exports.signup = (req, res, next) => {
   if (!validator.isEmail(req.body.email)) {
-    return res.status(400).json({ error: "Format d'email invalide." });
+    return next(new HttpError(400, "Format d'email invalide."));
   }
   bcrypt.hash(req.body.password, 10).then((hash) => {
     const user = new User({
@@ -18,9 +18,9 @@ exports.signup = (req, res, next) => {
       .then(() => res.status(201).json({ message: "Utilisateur créé !" }))
       .catch((error) => {
         if (error.name === "ValidationError" || error.code === 11000) {
-          res.status(400).json({ error });
+          return next(new HttpError(400, error.message, error.name));
         } else {
-          res.status(500).json({ error });
+          return next(error);
         }
       });
   });
@@ -30,14 +30,14 @@ exports.login = (req, res, next) => {
   User.findOne({ email: req.body.email })
     .then((user) => {
       if (!user) {
-        return res.status(401).json({ error: "Identifiants incorrects." });
+        return next(new HttpError(401, "Identifiants incorrects."));
       }
 
       bcrypt
         .compare(req.body.password, user.password)
         .then((valid) => {
           if (!valid) {
-            return res.status(401).json({ error: "Identifiants incorrects." });
+            return next(new HttpError(401, "Identifiants incorrects."));
           }
 
           res.status(200).json({
@@ -47,7 +47,7 @@ exports.login = (req, res, next) => {
             }),
           });
         })
-        .catch((error) => res.status(500).json({ error }));
+        .catch((error) => next(error));
     })
-    .catch((error) => res.status(500).json({ error }));
+    .catch((error) => next(error));
 };
