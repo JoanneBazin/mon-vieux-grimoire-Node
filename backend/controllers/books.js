@@ -1,11 +1,12 @@
 const resizeImage = require("../utils/sharp");
 const Book = require("../models/Book");
-const fs = require("fs");
 const HttpError = require("../utils/HttpError");
 const sanitizeData = require("../utils/sanitizeData");
+const deleteImage = require("../utils/deleteImage");
 
 exports.addBook = (req, res, next) => {
   const parsedBookObject = JSON.parse(req.body.book);
+  let savedFilename;
 
   const bookObject = sanitizeData(parsedBookObject);
   delete bookObject.userId;
@@ -16,6 +17,7 @@ exports.addBook = (req, res, next) => {
 
   resizeImage(req.file)
     .then((filename) => {
+      savedFilename = filename;
       const newBook = new Book({
         ...bookObject,
         userId: req.auth.userId,
@@ -28,6 +30,9 @@ exports.addBook = (req, res, next) => {
       res.status(201).json({ message: "Livre ajouté avec succès !" });
     })
     .catch((error) => {
+      if (savedFilename) {
+        deleteImage(savedFilename);
+      }
       if (error.name === "ValidationError") {
         return next(new HttpError(400, error.message, error.name));
       } else {
@@ -84,10 +89,8 @@ exports.updateBook = (req, res, next) => {
       if (req.file) {
         return resizeImage(req.file).then((newFile) => {
           const oldFile = foundBook.imageUrl.split("/images/")[1];
-          fs.unlink(`images/${oldFile}`, (err) => {
-            if (err)
-              console.log("Echec de la suppression de l'ancienne image: ", err);
-          });
+          deleteImage(oldFile);
+
           const newBookObject = sanitizeData(JSON.parse(req.body.book));
           newBookObject.imageUrl = `${req.protocol}://${req.get(
             "host"
@@ -129,14 +132,11 @@ exports.deleteBook = (req, res, next) => {
       }
 
       const filename = book.imageUrl.split("/images/")[1];
-      fs.unlink(`images/${filename}`, () => {
-        Book.deleteOne({ _id: req.params.id })
-          .then(() => res.status(200).json({ message: "Livre supprimé !" }))
-          .catch((error) =>
-            next(new HttpError(401, error.message, error.name))
-          );
-      });
+      deleteImage(filename);
+
+      return Book.deleteOne({ _id: req.params.id });
     })
+    .then(() => res.status(200).json({ message: "Livre supprimé !" }))
     .catch((error) => next(error));
 };
 
