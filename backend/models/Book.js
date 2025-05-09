@@ -20,6 +20,8 @@ const bookSchema = mongoose.Schema({
   year: {
     type: Number,
     required: true,
+    min: 1455,
+    max: new Date().getFullYear(),
   },
   genre: {
     type: String,
@@ -34,6 +36,8 @@ const bookSchema = mongoose.Schema({
       grade: {
         type: Number,
         required: true,
+        min: [1, "La note doit être comprise entre 1 et 5"],
+        max: [5, "La note doit être comprise entre 1 et 5"],
       },
     },
   ],

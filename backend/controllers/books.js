@@ -2,10 +2,17 @@ const resizeImage = require("../utils/sharp");
 const Book = require("../models/Book");
 const fs = require("fs");
 const HttpError = require("../utils/HttpError");
+const sanitizeData = require("../utils/sanitizeData");
 
 exports.addBook = (req, res, next) => {
-  const bookObject = JSON.parse(req.body.book);
+  const parsedBookObject = JSON.parse(req.body.book);
+
+  const bookObject = sanitizeData(parsedBookObject);
   delete bookObject.userId;
+
+  if (!req.file) {
+    return next(new HttpError(400, "Image manquante."));
+  }
 
   resizeImage(req.file)
     .then((filename) => {
@@ -81,14 +88,15 @@ exports.updateBook = (req, res, next) => {
             if (err)
               console.log("Echec de la suppression de l'ancienne image: ", err);
           });
+          const newBookObject = sanitizeData(JSON.parse(req.body.book));
+          newBookObject.imageUrl = `${req.protocol}://${req.get(
+            "host"
+          )}/images/${newFile}`;
 
-          return {
-            ...JSON.parse(req.body.book),
-            imageUrl: `${req.protocol}://${req.get("host")}/images/${newFile}`,
-          };
+          return newBookObject;
         });
       } else {
-        return { ...req.body };
+        return sanitizeData(req.body);
       }
     })
     .then((bookObject) => {
