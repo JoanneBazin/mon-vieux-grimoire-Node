@@ -72,7 +72,7 @@ router.get("/", booksCtrl.getAllBooks);
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               image:
  *                 type: string
  *                 format: binary
  *                 description: Cover image of the book
@@ -244,7 +244,7 @@ router.get("/:id", booksCtrl.getOneBook);
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               image:
  *                 type: string
  *                 format: binary
  *                 description: Cover image of the book
