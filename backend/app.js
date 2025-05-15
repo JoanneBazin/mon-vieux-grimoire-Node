@@ -5,6 +5,8 @@ const path = require("path");
 const booksRoutes = require("./routes/books");
 const authRoutes = require("./routes/auth");
 const errorMiddleware = require("./middleware/error.middleware");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./swaggerConfig");
 
 const app = express();
 app.use(express.json());
@@ -36,6 +38,8 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use("/api/books", booksRoutes);
 app.use("/api/auth", authRoutes);
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(errorMiddleware);
 
