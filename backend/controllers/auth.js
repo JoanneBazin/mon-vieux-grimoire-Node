@@ -28,6 +28,9 @@ exports.signup = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
+  if (!validator.isEmail(req.body.email)) {
+    return next(new HttpError(400, "Format d'email invalide."));
+  }
   User.findOne({ email: req.body.email })
     .then((user) => {
       if (!user) {
