@@ -36,7 +36,7 @@ const bookSchema = mongoose.Schema({
       grade: {
         type: Number,
         required: true,
-        min: [1, "La note doit être comprise entre 1 et 5"],
+        min: [0, "La note doit être comprise entre 0 et 5"],
         max: [5, "La note doit être comprise entre 1 et 5"],
       },
     },
