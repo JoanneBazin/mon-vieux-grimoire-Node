@@ -121,6 +121,7 @@ exports.updateBook = (req, res, next) => {
 };
 
 exports.deleteBook = (req, res, next) => {
+  let filename;
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
@@ -131,12 +132,14 @@ exports.deleteBook = (req, res, next) => {
         return next(new HttpError(403, "Unauthorized request"));
       }
 
-      const filename = book.imageUrl.split("/images/")[1];
-      deleteImage(filename);
+      filename = book.imageUrl.split("/images/")[1];
 
       return Book.deleteOne({ _id: req.params.id });
     })
-    .then(() => res.status(200).json({ message: "Livre supprimé !" }))
+    .then(() => {
+      deleteImage(filename);
+      res.status(200).json({ message: "Livre supprimé !" });
+    })
     .catch((error) => next(error));
 };
 
