@@ -63,6 +63,8 @@ router.get("/", booksCtrl.getAllBooks);
  * /books:
  *   post:
  *     summary: Add a new book
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -226,6 +228,8 @@ router.get("/:id", booksCtrl.getOneBook);
  * /books/{id}:
  *   put:
  *     summary: Update a book
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -326,6 +330,8 @@ router.put("/:id", auth, multer, booksCtrl.updateBook);
  * /books/{id}:
  *   delete:
  *     summary: Delete a book by ID
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -382,6 +388,8 @@ router.delete("/:id", auth, multer, booksCtrl.deleteBook);
  * /books/{id}/rating:
  *   post:
  *     summary: Rate a book
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
