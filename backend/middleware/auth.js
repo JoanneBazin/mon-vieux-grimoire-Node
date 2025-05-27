@@ -1,14 +1,24 @@
 const jwt = require("jsonwebtoken");
+const HttpError = require("../utils/HttpError");
 require("dotenv").config();
 
 module.exports = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return next(new HttpError(401, "Token d'authentification manquant"));
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return next(new HttpError(401, "Token invalide"));
+  }
+
   try {
-    const token = req.headers.authorization.split(" ")[1];
     const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET);
-    const userId = decodedToken.userId;
-    req.auth = { userId };
+    req.auth = { userId: decodedToken.userId };
     next();
   } catch (error) {
-    res.status(401).json({ error });
+    return next(new HttpError(401, error.message, error.name));
   }
 };
